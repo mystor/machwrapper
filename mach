@@ -14,7 +14,7 @@ TREE=$(basename "$DIR")
 
 # If we are looking at servo's mach, we don't need mozconfigs, so skip the rest
 # of this file
-if echo "$DIR" | grep -q servo; then
+if [[ -e "$DIR/servobuild.example" ]]; then
     "$MACH" $*
     exit $?
 fi
