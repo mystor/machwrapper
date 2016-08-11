@@ -1,46 +1,44 @@
 #!/bin/bash
 
 # Locate the mach executable
-dir="$PWD"
-while [[ ! -e "$dir/mach" ]]; do
-    if [[ $dir == '/' ]]; then
+DIR="$PWD"
+while [[ ! -e "$DIR/mach" ]]; do
+    if [[ "$DIR" == '/' ]]; then
         echo "ERROR: unable to locate mach in this directory or parent directories" >&2
         exit 1
     fi
-    dir=$(dirname $dir)
+    DIR=$(dirname "$DIR")
 done
+MACH="$DIR/mach"
+TREE=$(basename "$DIR")
 
 # If we are looking at servo's mach, we don't need mozconfigs, so skip the rest
 # of this file
-if echo "$dir" | grep -q servo; then
-    "$dir/mach" $*
+if echo "$DIR" | grep -q servo; then
+    "$MACH" $*
     exit $?
-fi
-
-if [[ ! $BRANCH ]]; then
-   BRANCH=$(git rev-parse --abbrev-ref HEAD)
 fi
 
 # Change which mozconfig is currently active, if that is specified
 if [[ $# == "1" && -e "$HOME/.mozconfigs/$1" ]]; then
-    echo "$HOME/.mozconfigs/$1" > "$HOME/.mozconfigs/__current__/$BRANCH"
-    echo "UPDATED: $BRANCH => $1" >&2
+    echo "$HOME/.mozconfigs/$1" > "$HOME/.mozconfigs/__current__/$TREE"
+    echo "UPDATED: $TREE => $1" >&2
     exit 0
 fi
 
-# Check if we have a selected mozconfig for this branch
-if [[ ! -e "$HOME/.mozconfigs/__current__/$BRANCH" ]]; then
-   echo "ERROR: $BRANCH => unspecified. Aborting." >&2
+# Check if we have a selected mozconfig for this tree
+if [[ ! -e "$HOME/.mozconfigs/__current__/$TREE" ]]; then
+   echo "ERROR: $TREE => unspecified. Aborting." >&2
    exit 1
 fi
-export MOZCONFIG=$(cat "$HOME/.mozconfigs/__current__/$BRANCH")
+export MOZCONFIG=$(cat "$HOME/.mozconfigs/__current__/$TREE")
 
 # Run mach
-echo "Found $BRANCH => $(basename $MOZCONFIG)" >&2
+echo "Found $TREE => $(basename $MOZCONFIG)" >&2
 echo -n "Press ^C to cancel..." >&2
 sleep 0.5
 
 echo
 echo
 
-"$dir/mach" $*
+"$MACH" $*
