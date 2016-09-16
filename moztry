@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# Exit on any failures - we don't want to push a borked patch to try
+set -e
+
+# Determine the name of the tree
+DIR="$PWD"
+while [[ ! -e "$DIR/mach" ]]; do
+    if [[ "$DIR" == '/' ]]; then
+        echo "ERROR: unable to locate mach in this directory or parent directories" >&2
+        exit 1
+    fi
+    DIR=$(dirname "$DIR")
+done
+TREE=$(basename "$DIR")
+
+if [[ ! -z $(git status -s) ]]; then
+    echo "There are unstaged changes in the index" >&2
+    exit 1
+fi
+
+CURRENT="$HOME/.mozconfigs/__current_try__/$TREE"
+
+function commit() {
+    echo "$*" | tee $CURRENT
+    sleep 1
+    git commit --allow-empty -m "$*"
+    if git push try; then
+        echo "Pushed successfully."
+    else
+        echo "Push failed."
+    fi
+    git reset HEAD~1
+    echo "Cleanup Successful"
+}
+
+# Handle cached try for current tree
+if [[ $# == 0 ]]; then
+    commit "$(cat $CURRENT)"
+elif [[ $# == 1 ]]; then
+    if [[ "$1" == "--clang" ]]; then
+        commit "try: -b do -p linux64-st-an,macosx64-st-an -u none -t none"
+    elif [[ "$1" == "--linux" ]]; then
+        commit "try: -b do -p linux64,linux64-st-an -u all -t none"
+    elif [[ "$1" == "--build-all" ]]; then
+        commit "try: -b do -p all -u all[x64] -t none"
+    elif [[ "$1" == "--talos" ]]; then
+        commit "try: -b o -p all -u none -t all --rebuild-talos 5"
+    elif [[ "$1" == "--all" ]]; then
+        commit "try: -b do -p all -u all -t none"
+    elif [[ "$1" == "--build-only" ]]; then
+        commit "try: -b do -p all -u none -t none"
+    else
+        echo "Unrecognized quicktry argument" >&2
+        exit 1
+    fi
+elif [[ "$1" == "try:" ]]; then
+    commit "$*"
+else
+    commit "try: $*"
+fi

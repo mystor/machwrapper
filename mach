@@ -19,6 +19,11 @@ if [[ -e "$DIR/servobuild.example" ]]; then
     exit $?
 fi
 
+if [[ $MOZCONFIG ]]; then
+    "$MACH" $*
+    exit $?
+fi
+
 # Change which mozconfig is currently active, if that is specified
 if [[ $# == "1" && -e "$HOME/.mozconfigs/$1" ]]; then
     echo "$HOME/.mozconfigs/$1" > "$HOME/.mozconfigs/__current__/$TREE"
