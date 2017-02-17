@@ -39,9 +39,11 @@ if [[ $# == 0 ]]; then
     commit "$(cat $CURRENT)"
 elif [[ $# == 1 ]]; then
     if [[ "$1" == "--clang" ]]; then
-        commit "try: -b do -p linux64-st-an,macosx64-st-an -u none -t none"
+        commit "try: -b do -p linux64-st-an,macosx64-st-an,win32-st-an,win64-st-an -u none -t none"
     elif [[ "$1" == "--linux" ]]; then
         commit "try: -b do -p linux64,linux64-st-an -u all -t none"
+    elif [[ "$1" == "--windows" ]]; then
+        commit "try: -b do -p win32,win32-st-an,win64,win64-st-an -u all -t none"
     elif [[ "$1" == "--build-all" ]]; then
         commit "try: -b do -p all -u all[x64] -t none"
     elif [[ "$1" == "--talos" ]]; then
