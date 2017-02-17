@@ -38,12 +38,23 @@ if [[ ! -e "$HOME/.mozconfigs/__current__/$TREE" ]]; then
 fi
 export MOZCONFIG=$(cat "$HOME/.mozconfigs/__current__/$TREE")
 
-# Run mach
-echo "Found $TREE => $(basename $MOZCONFIG)" >&2
-echo -n "Press ^C to cancel..." >&2
-sleep 0.5
+# Check if `icecc` is mentioned in the mozconfig to decide whether or not to set
+# -j when building
+ICECC=no
+if grep -q 'icecc' "$MOZCONFIG"; then
+    ICECC=yes
+fi
 
+# Run mach
+echo "Found $TREE => $(basename $MOZCONFIG) (icecc=$ICECC)" >&2
 echo
-echo
+
+# If we are building with icecc, set -j`icecc-jobs`!
+if [[ "$1" == "build" && "$ICECC" == "yes" ]]; then
+    shift
+    "$MACH" build -j`icecc-jobs` $*
+    exit $?
+fi
 
 "$MACH" $*
+exit $?
