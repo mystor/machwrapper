@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -e
+
+function usage() {
+    echo "codesync: $1" 2>&1
+    echo "  codesync # start an existing codesync setup" 2>&1
+    echo "  codesync --delete # unconfigure a codesync" 2>&1
+    echo "  codesync <host> <path> # configure codesync to target host/path" 2>&1
+    exit 1
+}
+
+CDIR="$HOME/__codesync__$PWD"
+CONF="$CDIR/config.lsyncd"
+
+mkdir -p "$CDIR"
+
+if [ $# == 1 ]; then
+    if [ $1 == "--delete" ]; then
+        echo "codesync: deleting configuration for $PWD" 2>&1
+        rm "$CONF"
+        exit 0
+    fi
+fi
+
+if [ ! -f "$CONF" ]; then
+    if [ $# != 2 ]; then
+        usage "No configuration present - use 2-argument setup form"
+    fi
+
+    HOST=$1
+    TARGET=$2
+    cat > "$CONF" <<EOF
+settings {
+    logfile = "$CDIR/log",
+    statusFile = "$CDIR/stat",
+    statusInterval = 1,
+}
+
+sync {
+    default.rsyncssh,
+    source = "$PWD",
+    host = "$HOST",
+    targetdir = "$TARGET",
+    exclude = { ".git", "obj-*", "target", ".#*" },
+    delete = "running",
+    delay = 2,
+}
+EOF
+
+    echo "codesync: setup configuration" 1>&2
+    cat $CONF
+    exit 0
+fi
+
+if [ $# != 0 ]; then
+    usage "expected 0-argument run form - config file present"
+fi
+
+echo "codesync: found config for $PWD"
+cat "$CONF"
+echo
+
+set -x
+lsyncd -nodaemon "$CONF"
+exit $?
