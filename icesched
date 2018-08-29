@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+
+import argparse
+from subprocess import run, PIPE
+import re
+import os
+
+commands = [
+    ('listcs', 'store_true'),
+    ('listblocks', 'store_true'),
+    ('listjobs', 'store_true'),
+    ('removecs', 'store'),
+    ('blockcs', 'store'),
+    ('unblockcs', 'store'),
+    ('internals', 'store_true'),
+]
+
+def main():
+    parser = argparse.ArgumentParser(description="print icecc scheduler info")
+    for command, action in commands:
+        parser.add_argument(f'--{command}', help=f'perform command {command}', action=action)
+
+    parser.add_argument('--max-jobs', '-j', help='# of icecream jobs', action='store_true')
+    parser.add_argument('--scheduler', '-s', help='specify scheduler', default='10.242.24.68')
+    parser.add_argument('--port', '-p', help='specify port', default='8766')
+    args = parser.parse_args()
+
+    netcat = ['nc', '-w', '1', args.scheduler, args.port]
+    for command, action in commands:
+        if getattr(args, command):
+            cmd = command.encode()
+            if action != 'store_true':
+                cmd += b' ' + getattr(args, command)
+            run(netcat, input=cmd + b'\nquit', check=True)
+            return
+
+    if args.max_jobs:
+        proc = run(netcat, input=b'listcs\nquit', stdout=PIPE, check=True)
+        njobs = 0
+        for line in proc.stdout.decode().splitlines():
+            match = re.search(r'\[x86_64\].+jobs=[0-9]+/([0-9]+)', line, re.I)
+            if match:
+                njobs += int(match.group(1))
+        print(njobs)
+        return
+
+    os.execvp('telnet', ['telnet', args.scheduler, args.port])
+
+if __name__ == '__main__':
+    main()
