@@ -52,7 +52,7 @@ echo
 # If we are building with icecc, set -j`icecc-jobs`!
 if [[ "$1" == "build" && "$ICECC" == "yes" ]]; then
     shift
-    "$MACH" build -j`icecc-jobs` $*
+    "$MACH" build -j`icesched -j` $*
     exit $?
 fi
 
