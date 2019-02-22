@@ -1,0 +1,45 @@
+#!/bin/bash
+
+set -e
+
+usage () {
+    cat << EOF
+usage: $0 [-b BUILD] [-p PLATFORM] [-u UNIT] [-t TALOS] TARGET
+EOF
+    exit 1
+}
+
+build=do
+platform=all
+unit=all[x64]
+talos=none
+
+OPTIND=1
+while getopts "b:p:u:t:" opt; do
+    case $opt in
+        b) build=$OPTARG;;
+        p) platform=$OPTARG;;
+        u) unit=$OPTARG;;
+        t) talos=$OPTARG;;
+        *) usage;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+target=$(git rev-parse --verify "${1:-HEAD}^{commit}")
+created=$(git commit-tree "$target^{tree}" -p "$target" << EOM
+try: -b $build -p $platform -u $unit -t $talos
+EOM
+)
+
+git show "$created"
+echo
+read -r -p "Submit? [y/N] " response
+case "$response" in
+    [yY]) 
+    	git push hg::ssh://hg.mozilla.org/try +$created:refs/heads/branches/default/tip
+	;;
+    *) exit 1;;
+esac
+
